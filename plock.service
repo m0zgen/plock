@@ -1,0 +1,12 @@
+[Unit]
+Description=Port Locker Service
+After=network.target firewalld.service
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/plock.sh start
+ExecStop=/usr/bin/plock.sh stop
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
