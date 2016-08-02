@@ -120,6 +120,7 @@ checkSOURCESTATUS() {
 
                                 . $SCRIPTPATH/conf.d/plock.conf
                                 CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
+                                echo "Config updated and changed to - $CURRENTCONFIG"
                             fi
                         fi
 
@@ -141,6 +142,9 @@ loop()
     while true
     do
       	writeLog "$(getDate) Script started" $LOG
+
+
+
         sleep $INTERVAL
     done
 }
@@ -171,7 +175,7 @@ if [ "$1" = "start" ]; then
 
     #loop &
 
-    echo $CURRENTCONFIG
+    # echo $CURRENTCONFIG
     echo Done
 
 fi
