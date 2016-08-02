@@ -1,21 +1,36 @@
 #!/bin/bash
-# Install / Uninstall plock in to system
+# Install / Uninstall Port locker service in to system
 # Author: Yevgeniy Goncharov aka xck, http://sys-adm.in
 
 PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
 
 SERVICE="plock.service"
+DEFAULTCONFIG="plock-default.config"
 SCRIPT="plock.sh"
+SYSTEMFOLDER="/etc/plock"
 
 installPlock() {
 
 	if [[ ! -f /etc/systemd/system/$SERVICE ]]; then
-		cp $SCRIPTPATH/$SERVICE /etc/systemd/system/$SERVICE
-		cp $SCRIPTPATH/$SCRIPT /usr/bin/$SCRIPT
 
+		# Make system folder for Plock
+		mkdir -p $SYSTEMFOLDER
+
+		# Copy action and program configs
+		cp -r action.d $SYSTEMFOLDER && cp -r conf.d $SYSTEMFOLDER
+
+		# Deploy script and service
+		cp $SCRIPTPATH/$SERVICE /etc/systemd/system/$SERVICE
+		cp $SCRIPTPATH/$SCRIPT $SYSTEMFOLDER/$SCRIPT
+
+		# Create symlink
+		# ln -s $SCRIPTPATH/$SCRIPT /usr/bin/plock
+
+		# Enable adn Start Plock service
 		systemctl enable $SERVICE
 		systemctl start $SERVICE
+		
 		echo "Done!"
 	else
 		echo "Service already installed"
@@ -33,6 +48,10 @@ unistallPlock() {
 		rm -rf /etc/systemd/system/$SERVICE
 		rm -rf /usr/bin/$SCRIPT
 		systemctl daemon-reload
+
+		rm -rf $SYSTEMFOLDER
+		# rm -rf /usr/bin/plock
+
 		echo "Uninstall complete!"
 	else
 		echo "Service not installed!"

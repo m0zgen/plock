@@ -9,8 +9,13 @@ PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 LOG="/var/log/plock.log"
 INTERVAL="5"
 
-CHECKLINK="https://sys-adm.in/robots.txt"
+CHECKLINKS="https://sys-adm.in/robots.txt https://docs.google.com/uc?export=download&id=0B_oezPrKERL8dDZGQ1hjQTFBQjQ"
 PORTLOCK=(ssh 22/tcp)
+
+#wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=0B_oezPrKERL8dDZGQ1hjQTFBQjQ' \
+#-O FILENAME
+# wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=0B_oezPrKERL8dDZGQ1hjQTFBQjQ' -O plock-default.local
+
 
 # Functions
 getDate() {
@@ -23,7 +28,7 @@ writeLog() {
 }
 
 checkLINKDOWN() {
-	RES=$(curl -Is $CHECKLINK | head -n 1 | grep "200" | wc -l)
+	RES=$(curl -Is $CHECKLINKS | head -n 1 | grep "200" | wc -l)
 	echo $RES
 	if [[ $RES -eq "1" ]]; then
 		return 0
@@ -46,12 +51,12 @@ loop()
 
 # Work parameters
 if [ "$1" = "start" ]; then
-    # loop &
+    loop &
     # echo "Enable loop"
 
     if checkLINKDOWN; then
     	
-    	
+    	echo "Action"
 
     else
     	echo "Site is down"
@@ -61,4 +66,8 @@ fi
 if [ "$1" = "stop" ]; then
     echo "Exit"
     exit 1
+fi
+
+if [[ -z "$1" ]]; then
+	echo "Usage - ./plock.sh start"
 fi
