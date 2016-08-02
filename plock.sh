@@ -57,7 +57,7 @@ checkSOURCEDOWN() {
 }
 
 checkFIREWALLD() {
-    
+
     if [[ -z $(firewall-cmd --list-all | grep -E 'services.*$i') ]]
     then
         echo "Found services"
@@ -96,31 +96,36 @@ checkSOURCESTATUS() {
             DOWN=false
 
             if [[ "$DOWN" = false ]]; then
-                
+
                 # Download file from link
                 wget -q --no-check-certificate $i -O $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
 
                 # Check valid config
-                url=$(echo $SCRIPTPATH/conf.d/$DOWNLOADCONFIG | grep "SOURCE" | grep -o -P '(?<=").*(?=")')
-                echo $url
+                sourcelist=(`cat $SCRIPTPATH/conf.d/$DOWNLOADCONFIG`)
 
-                if [[ ! -z $(cat $SCRIPTPATH/conf.d/$DOWNLOADCONFIG | grep "SOURCE") ]]
-                then
+                for i in ${sourcelist[@]}; do
+                    url=$(echo $i | grep SOURCE | grep -o -P '(?<=").*(?=")')
+                    if [[ ! -z $url ]]; then
+                        # If contain source link
+                        if checkSOURCEDOWN $url; then
+                            echo "Link work"
 
-                    
+                            # If valid - compare new and current config file
+                            diff $SCRIPTPATH/conf.d/$DOWNLOADCONFIG $CURRENTCONFIG
 
-                    # If valid - compare new and current config file
-                    diff $SCRIPTPATH/conf.d/$DOWNLOADCONFIG $CURRENTCONFIG
+                            # If config not equal, apply new config
+                            if [[ $? -ne 0 ]] ;then
+                                echo "Apply new config"
+                                cp $SCRIPTPATH/conf.d/download.local $SCRIPTPATH/conf.d/plock.local
 
-                    if [[ $? -ne 0 ]] ;then
-                        echo "Apply new config"
-                        cp $SCRIPTPATH/conf.d/download.local $SCRIPTPATH/conf.d/plock.local
-                    fi;
+                                . $SCRIPTPATH/conf.d/plock.conf
+                                CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
+                            fi
+                        fi
 
-                fi
-
-                # If link valid, download and check new config, and loop break
+                    fi
                 break
+                done
             fi
 
         else
@@ -144,38 +149,38 @@ loop()
 
 # Start parameters
 if [ "$1" = "start" ]; then
-    
+
     applyCONFIG
     checkSOURCESTATUS
 
-    # After apply new config check SOURCE variable, if empty apply default conf
-    if [[ -z $SOURCE ]]; then
-        . $SCRIPTPATH/conf.d/plock.conf
-        CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
+    # # After apply new config check SOURCE variable, if empty apply default conf
+    # if [[ -z $SOURCE ]]; then
+    #     . $SCRIPTPATH/conf.d/plock.conf
+    #     CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
 
-        # delete bad local config
-        rm -rf $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
-        rm -rf $SCRIPTPATH/conf.d/plock.local
+    #     # delete bad local config
+    #     rm -rf $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
+    #     rm -rf $SCRIPTPATH/conf.d/plock.local
 
-    fi
+    # fi
 
     # Export firewall config
     firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
 
-
+    # Add check firewall
 
     #loop &
 
     echo $CURRENTCONFIG
     echo Done
-    
+
 fi
 
 if [ "$1" = "stop" ]; then
 
     # In running custom
     if [[ -z $(ps -ef | grep "\./plock.sh start" | grep -v grep) ]]
-    then 
+    then
        echo -e "Not running"
     else
        echo -e "Service running kill him..."
