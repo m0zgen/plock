@@ -101,21 +101,13 @@ checkSOURCESTATUS() {
                 wget -q --no-check-certificate $i -O $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
 
                 # Check valid config
+                url=$(echo $SCRIPTPATH/conf.d/$DOWNLOADCONFIG | grep "SOURCE" | grep -o -P '(?<=").*(?=")')
+                echo $url
+
                 if [[ ! -z $(cat $SCRIPTPATH/conf.d/$DOWNLOADCONFIG | grep "SOURCE") ]]
                 then
 
-                    # Check valid step two
-                    while read -r line; do
-                        
-                        # Cut comment lines
-                        if [[ -n "$line" && "$line" != [[:blank:]#]* ]]; then
-
-                            PARAMS+=$line
-
-                        fi
-
-                    done < $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
-
+                    
 
                     # If valid - compare new and current config file
                     diff $SCRIPTPATH/conf.d/$DOWNLOADCONFIG $CURRENTCONFIG
