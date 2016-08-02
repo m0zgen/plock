@@ -70,15 +70,8 @@ checkFIREWALLD() {
 
 }
 
-kiilMe() {
-    echo killme
-}
 
 # Actions
-# Check SOURCE up status and download config
-# compareCONFIG() {
-
-# }
 
 checkSOURCESTATUS() {
 
@@ -159,6 +152,12 @@ if [ "$1" = "start" ]; then
 
     applyCONFIG
     checkSOURCESTATUS
+
+    echo ${PORTLOCK[*]}
+    echo $SOURCE
+    echo $INTERVAL
+    echo ${PORTOPEN[*]}
+    echo $IP
 
     # # After apply new config check SOURCE variable, if empty apply default conf
     # if [[ -z $SOURCE ]]; then
