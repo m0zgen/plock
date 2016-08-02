@@ -18,7 +18,7 @@ installPlock() {
 		mkdir -p $SYSTEMFOLDER
 
 		# Copy action and program configs
-		cp -r action.d $SYSTEMFOLDER && cp -r conf.d $SYSTEMFOLDER
+		cp -r conf.d $SYSTEMFOLDER
 
 		# Deploy script and service
 		cp $SCRIPTPATH/$SERVICE /etc/systemd/system/$SERVICE
