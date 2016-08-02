@@ -1,9 +1,15 @@
 # Port locker config file
+
+
 LOG="/var/log/plock.log"
 INTERVAL="5"
 
 # Locked ports
 PORTLOCK=(ssh 22/tcp)
+
+# Open ports
+PORTOPEN=()
+IP=""
 
 # Setup general config repositories
 SOURCE="http://forum.sys-admin.kz/custom/plock"

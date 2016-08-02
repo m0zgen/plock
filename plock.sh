@@ -48,7 +48,7 @@ writeLog() {
 
 checkSOURCEDOWN() {
 	RES=$(curl -Is $1 | head -n 1 | grep "200" | wc -l)
-	echo $RES
+	# echo $RES
 	if [[ $RES -eq "1" ]]; then
 		return 0
 	else
@@ -104,7 +104,9 @@ checkSOURCESTATUS() {
                 sourcelist=(`cat $SCRIPTPATH/conf.d/$DOWNLOADCONFIG`)
 
                 for i in ${sourcelist[@]}; do
+
                     url=$(echo $i | grep SOURCE | grep -o -P '(?<=").*(?=")')
+
                     if [[ ! -z $url ]]; then
                         # If contain source link
                         if checkSOURCEDOWN $url; then
@@ -121,11 +123,12 @@ checkSOURCESTATUS() {
                                 . $SCRIPTPATH/conf.d/plock.conf
                                 CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
                                 echo "Config updated and changed to - $CURRENTCONFIG"
+                            break
                             fi
                         fi
 
                     fi
-                break
+
                 done
             fi
 
