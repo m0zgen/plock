@@ -2,25 +2,20 @@
 # Port locker service
 # Author: Yevgeniy Goncharov aka xck, http://sys-adm.in
 
-# Environments
+# ---------------------------------------------------------- VARIABLES #
 PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
 
 CURRENTCONFIG=""
 DOWNLOADCONFIG="download.local"
+FIREWALLDUMP="firewall-dump"
 
-# Variables
-# LOG="/var/log/plock.log"
-# INTERVAL="5"
-
-# SOURCE="http://forum.sys-admin.kz/robots.txt https://docs.google.com/uc?export=download&id=0B_oezPrKERL8dDZGQ1hjQTFBQjQ"
-# PORTLOCK=(ssh 22/tcp)
+# Use local config or no
+BLOCKLOCALCONFIG=false
+# Source links is down by default
 DOWN=true
 
-
-#wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=0B_oezPrKERL8dDZGQ1hjQTFBQjQ' \
-#-O FILENAME
-# wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=0B_oezPrKERL8dDZGQ1hjQTFBQjQ' -O plock-default.local
+# ---------------------------------------------------------- FUNCTIONS #
 
 applyCONFIG() {
     if [ -n "$(ls -A $SCRIPTPATH/conf.d/plock.local)" ]
@@ -36,15 +31,16 @@ applyCONFIG() {
     fi
 }
 
-# Functions
 getDate() {
         dte=$(date +%d-%m-%Y-%H:%M:%S)
         echo $dte
 }
 
+
 writeLog() {
         echo -e "$1" >> "$2"
 }
+
 
 checkSOURCEDOWN() {
 	RES=$(curl -Is $1 | head -n 1 | grep "200" | wc -l)
@@ -58,20 +54,17 @@ checkSOURCEDOWN() {
 
 checkFIREWALLD() {
 
-    if [[ -z $(firewall-cmd --list-all | grep -E 'services.*$i') ]]
+    if [[ -z $(firewall-cmd --list-all | grep -E 'services.*$1') ]]
     then
-        echo "Found services"
+        echo "Found services - $1"
     fi
 
-    if [[ -z $(firewall-cmd --list-all | grep -E 'ports.*$i') ]]
+    if [[ -z $(firewall-cmd --list-all | grep -E 'ports.*$1') ]]
     then
-        echo "Found ports"
+        echo "Found ports - echo $1"
     fi
 
 }
-
-
-# Actions
 
 checkSOURCESTATUS() {
 
@@ -133,6 +126,19 @@ checkSOURCESTATUS() {
 
 }
 
+
+lockPORT() {
+    
+    # Create dump from current firewalld zone
+    firewall-cmd --list-all > $SCRIPTPATH/$FIREWALLDUMP
+
+
+
+
+
+}
+
+
 loop()
 {
     while true
@@ -147,28 +153,44 @@ loop()
 
 
 
-# Start parameters
+# ---------------------------------------------------------- START / STOP #
+
+# START
+
 if [ "$1" = "start" ]; then
 
     applyCONFIG
     checkSOURCESTATUS
 
-    echo ${PORTLOCK[*]}
-    echo $SOURCE
-    echo $INTERVAL
-    echo ${PORTOPEN[*]}
-    echo $IP
+    # Read and apply parameters
+    for p in ${PORTLOCK[@]}; do
+        # lockPORT $p
+        
+        pp=$(firewall-cmd --list-all | grep $p)
 
-    # # After apply new config check SOURCE variable, if empty apply default conf
-    # if [[ -z $SOURCE ]]; then
-    #     . $SCRIPTPATH/conf.d/plock.conf
-    #     CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
+        if [[ ! -z $pp ]]; then
 
-    #     # delete bad local config
-    #     rm -rf $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
-    #     rm -rf $SCRIPTPATH/conf.d/plock.local
+            firewall-cmd --reload
 
-    # fi
+            if [[ $pp == *"services"*  ]]; then
+
+                # Not permanent
+                echo "Service action!! - $p"
+                firewall-cmd --remove-service=$p
+
+            elif [[ $pp == *"ports"* ]]; then
+                
+                # Not permanent
+                echo "Port action!! -$p"
+                firewall-cmd --remove-port=$p
+            fi
+
+        fi
+
+    done
+
+
+
 
     # Export firewall config
     firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
@@ -181,6 +203,8 @@ if [ "$1" = "start" ]; then
     echo Done
 
 fi
+
+# STOP
 
 if [ "$1" = "stop" ]; then
 
@@ -207,3 +231,24 @@ fi
 if [[ -z "$1" ]]; then
 	echo "Usage - ./plock.sh start"
 fi
+
+# ---------------------------------------------------------- FOOTER #
+
+
+# wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=<DOCUMENT ID>' -O plock-default.local
+#
+    # echo $SOURCE
+    # echo $INTERVAL
+    # echo ${PORTOPEN[*]}
+    # echo $IP
+
+    # # After apply new config check SOURCE variable, if empty apply default conf
+    # if [[ -z $SOURCE ]]; then
+    #     . $SCRIPTPATH/conf.d/plock.conf
+    #     CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
+
+    #     # delete bad local config
+    #     rm -rf $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
+    #     rm -rf $SCRIPTPATH/conf.d/plock.local
+
+    # fi

@@ -8,8 +8,8 @@ INTERVAL="5"
 PORTLOCK=(ssh 22/tcp)
 
 # Open ports
-PORTOPEN=()
-IP=""
+PORTOPEN=(ssh 1500/tcp)
+IP="192.168.122.10"
 
 # Setup general config repositories
 SOURCE="http://forum.sys-admin.kz/custom/plock"
