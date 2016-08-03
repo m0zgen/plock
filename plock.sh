@@ -17,7 +17,12 @@ DOWN=true
 
 # ---------------------------------------------------------- FUNCTIONS #
 
-applyCONFIG() {
+checkServerUptime() {
+
+}
+
+
+applyConfig() {
     if [ -n "$(ls -A $SCRIPTPATH/conf.d/plock.local)" ]
     then
       echo "Local configuration found. Plock use plock.local"
@@ -31,6 +36,7 @@ applyCONFIG() {
     fi
 }
 
+
 getDate() {
         dte=$(date +%d-%m-%Y-%H:%M:%S)
         echo $dte
@@ -42,7 +48,7 @@ writeLog() {
 }
 
 
-checkSOURCEDOWN() {
+checkSourceDown() {
 	RES=$(curl -Is $1 | head -n 1 | grep "200" | wc -l)
 	# echo $RES
 	if [[ $RES -eq "1" ]]; then
@@ -52,21 +58,8 @@ checkSOURCEDOWN() {
 	fi
 }
 
-checkFIREWALLD() {
 
-    if [[ -z $(firewall-cmd --list-all | grep -E 'services.*$1') ]]
-    then
-        echo "Found services - $1"
-    fi
-
-    if [[ -z $(firewall-cmd --list-all | grep -E 'ports.*$1') ]]
-    then
-        echo "Found ports - echo $1"
-    fi
-
-}
-
-checkSOURCESTATUS() {
+checkSourceStatus() {
 
     for i in ${SOURCE[@]}; do
 
@@ -77,7 +70,7 @@ checkSOURCESTATUS() {
         # Extract link as http://link then check him available
         # DOMAIN=$(echo "${i%/*}")
 
-        if checkSOURCEDOWN $DOMAIN; then
+        if checkSourceDown $DOMAIN; then
 
             DOWN=false
 
@@ -95,7 +88,7 @@ checkSOURCESTATUS() {
 
                     if [[ ! -z $url ]]; then
                         # If contain source link
-                        if checkSOURCEDOWN $url; then
+                        if checkSourceDown $url; then
                             echo "Link work"
 
                             # If valid - compare new and current config file
@@ -123,7 +116,6 @@ checkSOURCESTATUS() {
         fi
 
     done
-
 }
 
 
@@ -131,10 +123,6 @@ lockPORT() {
     
     # Create dump from current firewalld zone
     firewall-cmd --list-all > $SCRIPTPATH/$FIREWALLDUMP
-
-
-
-
 
 }
 
@@ -144,8 +132,6 @@ loop()
     while true
     do
       	writeLog "$(getDate) Script started" $LOG
-
-
 
         sleep $INTERVAL
     done
@@ -159,8 +145,8 @@ loop()
 
 if [ "$1" = "start" ]; then
 
-    applyCONFIG
-    checkSOURCESTATUS
+    applyConfig
+    checkSourceStatus
 
     # Read and apply parameters
     for p in ${PORTLOCK[@]}; do
@@ -188,9 +174,6 @@ if [ "$1" = "start" ]; then
         fi
 
     done
-
-
-
 
     # Export firewall config
     firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
