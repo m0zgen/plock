@@ -121,9 +121,35 @@ checkConfigSource() {
 
 lockPORT() {
     
-    # Create dump from current firewalld zone
-    firewall-cmd --list-all > $SCRIPTPATH/$FIREWALLDUMP
+    # Read and apply current lock parameters from config
+    for p in ${PORTLOCK[@]}; do
+        
+        # Get current firewall settings
+        pp=$(firewall-cmd --list-all | grep $p)
 
+        if [[ ! -z $pp ]]; then
+
+            if [[ $pp == *"services"*  ]]; then
+
+                # Not permanent
+                echo "Service action!! - $p"
+                firewall-cmd --remove-service=$p
+
+            elif [[ $pp == *"ports"* ]]; then
+                
+                # Not permanent
+                echo "Port action!! -$p"
+                firewall-cmd --remove-port=$p
+            fi
+
+        fi
+
+    done
+
+}
+
+openPort() {
+    echo "Develop me)"
 }
 
 
@@ -153,30 +179,7 @@ if [ "$1" = "start" ]; then
     # Export firewall config
     firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
 
-    # Read and apply current lock parameters from config
-    for p in ${PORTLOCK[@]}; do
-        
-        # Get current firewall settings
-        pp=$(firewall-cmd --list-all | grep $p)
-
-        if [[ ! -z $pp ]]; then
-
-            if [[ $pp == *"services"*  ]]; then
-
-                # Not permanent
-                echo "Service action!! - $p"
-                firewall-cmd --remove-service=$p
-
-            elif [[ $pp == *"ports"* ]]; then
-                
-                # Not permanent
-                echo "Port action!! -$p"
-                firewall-cmd --remove-port=$p
-            fi
-
-        fi
-
-    done
+    lockPORT
 
     # Read and apply port open for ip
     for i in $IP; do
