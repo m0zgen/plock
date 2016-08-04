@@ -178,7 +178,7 @@ if [ "$1" = "start" ]; then
 
     done
 
-    # Read and apply port open from ip
+    # Read and apply port open for ip
     for i in $IP; do
         echo $i
 
