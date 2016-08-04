@@ -196,13 +196,11 @@ if [ "$1" = "start" ]; then
 
     done
 
-    
-
-    # Add check firewall
+    # Add open from link    
 
     #loop &
 
-    # echo $CURRENTCONFIG
+    
     echo Done
 
 fi
