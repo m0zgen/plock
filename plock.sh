@@ -18,7 +18,7 @@ DOWN=true
 # ---------------------------------------------------------- FUNCTIONS #
 
 checkServerUptime() {
-
+    echo "Check uptime server"
 }
 
 
@@ -58,8 +58,8 @@ checkSourceDown() {
 	fi
 }
 
-
-checkSourceStatus() {
+# 
+checkConfigSource() {
 
     for i in ${SOURCE[@]}; do
 
@@ -145,18 +145,21 @@ loop()
 
 if [ "$1" = "start" ]; then
 
+    # Apply current configs
     applyConfig
-    checkSourceStatus
+    # Check, download and apply new config from source
+    checkConfigSource
 
-    # Read and apply parameters
+    # Export firewall config
+    firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
+
+    # Read and apply current lock parameters from config
     for p in ${PORTLOCK[@]}; do
-        # lockPORT $p
         
+        # Get current firewall settings
         pp=$(firewall-cmd --list-all | grep $p)
 
         if [[ ! -z $pp ]]; then
-
-            firewall-cmd --reload
 
             if [[ $pp == *"services"*  ]]; then
 
@@ -175,8 +178,22 @@ if [ "$1" = "start" ]; then
 
     done
 
-    # Export firewall config
-    firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
+    # Read and apply port open from ip
+    for i in $IP; do
+        echo $i
+
+        for p in ${PORTOPEN[@]}; do
+            echo $p
+
+            # firewall-cmd --add-rich-rule 'rule family="ipv4" source address="$i" service name="$p" accept'
+
+            # firewall-cmd --add-rich-rule 'rule family="ipv4" source address="$i" port port="$p" protocol="tcp|udp" accept'
+
+        done
+
+    done
+
+    
 
     # Add check firewall
 
@@ -203,6 +220,7 @@ if [ "$1" = "stop" ]; then
             echo "Kill PID $i"
             kill -9 $i
         done
+        firewall-cmd --reload
     fi
 
 
