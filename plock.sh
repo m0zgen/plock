@@ -11,6 +11,8 @@ DOWNLOADCONFIG="download.local"
 REMOTECONFIG_NAME="plock.remote"
 REMOTECONFIG=""
 
+WORKLOCAL=false
+
 FIREWALLDUMP="firewall-dump"
 
 # Use local config or no
@@ -62,69 +64,17 @@ checkSourceDown() {
 	fi
 }
 
-# 
-checkConfigSource() {
-
-    for i in ${SOURCE[@]}; do
-
-        # Extract domain from link
-        # DOMAIN=$(echo $i | awk -F/ '{print $3}')
-        # Extract fro http
-        DOMAIN=$(echo $i | grep -Eo '(http|https)://[^/"]+')
-        # Extract link as http://link then check him available
-        # DOMAIN=$(echo "${i%/*}")
-
-        if checkSourceDown $DOMAIN; then
-
-            DOWN=false
-
-            if [[ "$DOWN" = false ]]; then
-
-                # Download file from link
-                wget -q --no-check-certificate $i -O $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
-
-                # Check valid config
-                sourcelist=(`cat $SCRIPTPATH/conf.d/$DOWNLOADCONFIG`)
-
-                for i in ${sourcelist[@]}; do
-
-                    url=$(echo $i | grep SOURCE | grep -o -P '(?<=").*(?=")')
-
-                    if [[ ! -z $url ]]; then
-                        # If contain source link
-                        if checkSourceDown $url; then
-                            echo "Link work"
-
-                            # If valid - compare new and current config file
-                            diff $SCRIPTPATH/conf.d/$DOWNLOADCONFIG $REMOTECONFIG
-
-                            # If config not equal, apply new config
-                            if [[ $? -ne 0 ]] ;then
-                                echo "Apply new config"
-                                cp $SCRIPTPATH/conf.d/download.local $SCRIPTPATH/conf.d/$REMOTECONFIG_NAME
-
-                                . $SCRIPTPATH/conf.d/plock.conf
-                                REMOTECONFIG="$SCRIPTPATH/conf.d/plock.conf"
-                                echo "Config updated and changed to - $REMOTECONFIG"
-                            break
-                            fi
-                        fi
-
-                    fi
-
-                done
-            fi
-
-        else
-            echo "$DOMAIN - Site is down"
-        fi
-
-    done
-}
-
-
 lockPORT() {
     
+    echo LockPort
+
+    if [[ -z $PORTOPEN ]]; then
+        
+        firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
+        firewall-cmd --reload
+        
+    fi
+
     # Read and apply current lock parameters from config
     for p in ${PORTLOCK[@]}; do
         
@@ -152,6 +102,69 @@ lockPORT() {
 
 }
 
+# 
+checkConfigSource() {
+
+    for i in ${SOURCE[@]}; do
+
+        # Extract domain from link
+        # DOMAIN=$(echo $i | awk -F/ '{print $3}')
+        # Extract fro http
+        DOMAIN=$(echo $i | grep -Eo '(http|https)://[^/"]+')
+        # Extract link as http://link then check him available
+        # DOMAIN=$(echo "${i%/*}")
+
+        if checkSourceDown $DOMAIN; then
+
+            DOWN=false
+
+            if [[ "$DOWN" = false ]]; then
+
+                echo "Wget" 
+                # Download file from link
+                wget --no-cache -q --no-check-certificate $i -O $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
+
+                # Check valid config
+                sourcelist=(`cat $SCRIPTPATH/conf.d/$DOWNLOADCONFIG`)
+
+                # for i in ${sourcelist[@]}; do
+
+                #     url=$(echo $i | grep SOURCE | grep -o -P '(?<=").*(?=")')
+
+                #     if [[ ! -z $url ]]; then
+                #         # If contain source link
+                #         if checkSourceDown $url; then
+                #             echo "Link work"
+
+                            # If valid - compare new and current config file
+                            diff $SCRIPTPATH/conf.d/$DOWNLOADCONFIG $REMOTECONFIG
+
+                            # If config not equal, apply new config
+                            if [[ $? -ne 0 ]] ;then
+                                echo "Apply new config"
+                                cp $SCRIPTPATH/conf.d/download.local $SCRIPTPATH/conf.d/$REMOTECONFIG_NAME
+
+                                . $SCRIPTPATH/conf.d/plock.conf
+                                REMOTECONFIG="$SCRIPTPATH/conf.d/$REMOTECONFIG_NAME"
+                                echo "Config updated and changed to - $REMOTECONFIG"
+
+
+                            break
+                            fi
+                #         fi
+
+                #     fi
+
+                # done
+            fi
+
+        else
+            echo "$DOMAIN - Site is down"
+        fi
+
+    done
+}
+
 openPort() {
     echo "Develop me)"
 }
@@ -175,18 +188,32 @@ loop()
 
 if [ "$1" = "start" ]; then
 
-    # Apply current configs
-    applyConfig
-    # Check, download and apply new config from source
-    checkConfigSource
-
-    # Export firewall config
-    firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
+    # If WORKLOCAL=true, plock work with local config file
+    if $WORKLOCAL; then
+        . $GENERALCONFIG
+    else
+        # Apply current configs
+        applyConfig
+        # Check, download and apply new config from source
+        
+        echo "Check config on remote source..."
+        checkConfigSource
+    fi
 
     lockPORT
 
     # Read and apply port open for ip
-    for i in $IP; do
+
+    if [[ "$IP" -eq "ALL" ]]; then
+
+        for p in ${PORTOPEN[@]}; do
+            echo "ALL - $p"
+
+            firewall-cmd --add-rich-rule 'rule family="ipv4" service name='"$p"' accept'
+
+        done
+    else
+        for i in $IP; do
         echo $i
 
         for p in ${PORTOPEN[@]}; do
@@ -196,7 +223,10 @@ if [ "$1" = "start" ]; then
 
         done
 
-    done
+    done        
+    fi
+
+
 
     # Add open from link    
 

@@ -2,6 +2,8 @@
 # Install / Uninstall Port locker service in to system
 # Author: Yevgeniy Goncharov aka xck, http://sys-adm.in
 
+# Install as Service
+
 PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
 
