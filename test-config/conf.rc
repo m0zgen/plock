@@ -1,0 +1,12 @@
+settings_global() {
+# Server IP
+LOCALIP="192.168.122.10"
+}
+
+# System
+settings_system() {
+value1=2
+LOCALIP="192.168.122.11"
+}
+
+

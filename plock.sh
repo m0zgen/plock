@@ -6,8 +6,11 @@
 PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
 
-CURRENTCONFIG=""
+GENERALCONFIG="$SCRIPTPATH/conf.d/plock.conf"
 DOWNLOADCONFIG="download.local"
+REMOTECONFIG_NAME="plock.remote"
+REMOTECONFIG=""
+
 FIREWALLDUMP="firewall-dump"
 
 # Use local config or no
@@ -23,16 +26,17 @@ checkServerUptime() {
 
 
 applyConfig() {
-    if [ -n "$(ls -A $SCRIPTPATH/conf.d/plock.local)" ]
+    if [ -n "$(ls -A $SCRIPTPATH/conf.d/$REMOTECONFIG_NAME)" ]
     then
-      echo "Local configuration found. Plock use plock.local"
-      . $SCRIPTPATH/conf.d/plock.local
-      CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.local"
+      echo "Local configuration found. Plock use $REMOTECONFIG_NAME"
+      . $GENERALCONFIG
+      REMOTECONFIG="$SCRIPTPATH/conf.d/$REMOTECONFIG_NAME"
+      . $REMOTECONFIG
     else
       # echo "empty (or does not exist)"
-      echo "Local configuration not found. Plock use plock.conf"
-      . $SCRIPTPATH/conf.d/plock.conf
-      CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
+      echo "Local configuration not found. Plock use $REMOTECONFIG_NAME"
+      . $GENERALCONFIG
+      # REMOTECONFIG="$SCRIPTPATH/conf.d/plock.conf"
     fi
 }
 
@@ -92,16 +96,16 @@ checkConfigSource() {
                             echo "Link work"
 
                             # If valid - compare new and current config file
-                            diff $SCRIPTPATH/conf.d/$DOWNLOADCONFIG $CURRENTCONFIG
+                            diff $SCRIPTPATH/conf.d/$DOWNLOADCONFIG $REMOTECONFIG
 
                             # If config not equal, apply new config
                             if [[ $? -ne 0 ]] ;then
                                 echo "Apply new config"
-                                cp $SCRIPTPATH/conf.d/download.local $SCRIPTPATH/conf.d/plock.local
+                                cp $SCRIPTPATH/conf.d/download.local $SCRIPTPATH/conf.d/$REMOTECONFIG_NAME
 
                                 . $SCRIPTPATH/conf.d/plock.conf
-                                CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
-                                echo "Config updated and changed to - $CURRENTCONFIG"
+                                REMOTECONFIG="$SCRIPTPATH/conf.d/plock.conf"
+                                echo "Config updated and changed to - $REMOTECONFIG"
                             break
                             fi
                         fi
@@ -138,7 +142,7 @@ lockPORT() {
             elif [[ $pp == *"ports"* ]]; then
                 
                 # Not permanent
-                echo "Port action!! -$p"
+                echo "Port action!! - $p"
                 firewall-cmd --remove-port=$p
             fi
 
@@ -186,11 +190,9 @@ if [ "$1" = "start" ]; then
         echo $i
 
         for p in ${PORTOPEN[@]}; do
-            echo $p
+            echo "$p - $i"
 
-            # firewall-cmd --add-rich-rule 'rule family="ipv4" source address="$i" service name="$p" accept'
-
-            # firewall-cmd --add-rich-rule 'rule family="ipv4" source address="$i" port port="$p" protocol="tcp|udp" accept'
+            firewall-cmd --add-rich-rule 'rule family="ipv4" source address='"$i"' service name='"$p"' accept'
 
         done
 
@@ -198,9 +200,8 @@ if [ "$1" = "start" ]; then
 
     # Add open from link    
 
-    #loop &
+    # loop &
 
-    
     echo Done
 
 fi
@@ -247,10 +248,10 @@ fi
     # # After apply new config check SOURCE variable, if empty apply default conf
     # if [[ -z $SOURCE ]]; then
     #     . $SCRIPTPATH/conf.d/plock.conf
-    #     CURRENTCONFIG="$SCRIPTPATH/conf.d/plock.conf"
+    #     REMOTECONFIG="$SCRIPTPATH/conf.d/plock.conf"
 
     #     # delete bad local config
     #     rm -rf $SCRIPTPATH/conf.d/$DOWNLOADCONFIG
-    #     rm -rf $SCRIPTPATH/conf.d/plock.local
+    #     rm -rf $SCRIPTPATH/conf.d/$REMOTECONFIG_NAME
 
     # fi

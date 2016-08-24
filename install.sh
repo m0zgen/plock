@@ -10,6 +10,7 @@ DEFAULTCONFIG="plock-default.config"
 SCRIPT="plock.sh"
 SYSTEMFOLDER="/etc/plock"
 
+# Uncomment loop first in plock.sh
 installPlock() {
 
 	if [[ ! -f /etc/systemd/system/$SERVICE ]]; then
