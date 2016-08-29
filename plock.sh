@@ -68,14 +68,15 @@ applyConfig() {
 lockPORT() {
     
     # echo $PORTOPEN
-    echo ${PORTLOCK[*]}
+    echo "Function lockPort - ${PORTLOCK[*]}"
 
-    # if [[ -z $PORTOPEN ]]; then
+    # If empty delete rich rules
+    if [[ -z $PORTOPEN ]]; then
         
-    #     firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
-    #     firewall-cmd --reload
+        firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
+        firewall-cmd --reload
         
-    # fi
+    fi
 
     # Read and apply current lock parameters from config
     for p in ${PORTLOCK[@]}; do
