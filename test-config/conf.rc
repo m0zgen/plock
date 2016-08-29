@@ -1,5 +1,6 @@
 settings_global() {
 # Server IP
+value1=1
 LOCALIP="192.168.122.10"
 }
 

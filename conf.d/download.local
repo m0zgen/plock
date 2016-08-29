@@ -1,3 +1,0 @@
-PORTLOCK=(ssh 22/tcp)
-PORTOPEN=()
-IP="ALL"

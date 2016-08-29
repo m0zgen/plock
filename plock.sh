@@ -23,9 +23,31 @@ DOWN=true
 # ---------------------------------------------------------- FUNCTIONS #
 
 checkServerUptime() {
+
     echo "Check uptime server"
+
 }
 
+writeLog() { 
+
+    echo -e "$1" >> "$2"
+
+}
+
+getDate() {
+        dte=$(date +%d-%m-%Y-%H:%M:%S)
+        echo $dte
+}
+
+checkSourceDown() {
+    RES=$(curl -Is $1 | head -n 1 | grep "200" | wc -l)
+    # echo $RES
+    if [[ $RES -eq "1" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 applyConfig() {
     if [ -n "$(ls -A $SCRIPTPATH/conf.d/$REMOTECONFIG_NAME)" ]
@@ -43,37 +65,17 @@ applyConfig() {
 }
 
 
-getDate() {
-        dte=$(date +%d-%m-%Y-%H:%M:%S)
-        echo $dte
-}
-
-
-writeLog() {
-        echo -e "$1" >> "$2"
-}
-
-
-checkSourceDown() {
-	RES=$(curl -Is $1 | head -n 1 | grep "200" | wc -l)
-	# echo $RES
-	if [[ $RES -eq "1" ]]; then
-		return 0
-	else
-		return 1
-	fi
-}
-
 lockPORT() {
     
-    echo LockPort
+    # echo $PORTOPEN
+    echo ${PORTLOCK[*]}
 
-    if [[ -z $PORTOPEN ]]; then
+    # if [[ -z $PORTOPEN ]]; then
         
-        firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
-        firewall-cmd --reload
+    #     firewall-cmd --list-all >> $SCRIPTPATH/conf.d/firewall_history
+    #     firewall-cmd --reload
         
-    fi
+    # fi
 
     # Read and apply current lock parameters from config
     for p in ${PORTLOCK[@]}; do
@@ -180,8 +182,6 @@ loop()
     done
 }
 
-
-
 # ---------------------------------------------------------- START / STOP #
 
 # START
@@ -210,6 +210,8 @@ if [ "$1" = "start" ]; then
             echo "ALL - $p"
 
             firewall-cmd --add-rich-rule 'rule family="ipv4" service name='"$p"' accept'
+            # firewall-cmd --add-rich-rule 'rule family="ipv4" port port="1500" protocol="tcp" accept'
+            # firewall-cmd --remove-rich-rule 'rule family="ipv4" port port="1500" protocol="tcp" accept'
 
         done
     else
@@ -231,6 +233,9 @@ if [ "$1" = "start" ]; then
     # Add open from link    
 
     # loop &
+
+    echo ${PORTOPEN[*]}
+    echo ${PORTLOCK[*]}
 
     echo Done
 
